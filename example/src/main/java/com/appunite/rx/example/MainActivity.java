@@ -68,7 +68,7 @@ public class MainActivity extends BaseActivity {
                 .subscribe(ViewActions.setText(error));
 
         presenter.openDetailsObservable()
-                .compose(lifecycleMainObservable.<MainPresenter.AdapterItem>bindLifecycle())
+                .compose(lifecycleMainObservable.<MainPresenter.PostAdapterItem>bindLifecycle())
                 .subscribe(startDetailsActivityAction(this));
 
         MoreViewObservables.scroll(recyclerView)
@@ -78,10 +78,10 @@ public class MainActivity extends BaseActivity {
     }
 
     @Nonnull
-    private static Action1<MainPresenter.AdapterItem> startDetailsActivityAction(final Activity activity) {
-        return new Action1<MainPresenter.AdapterItem>() {
+    private static Action1<MainPresenter.PostAdapterItem> startDetailsActivityAction(final Activity activity) {
+        return new Action1<MainPresenter.PostAdapterItem>() {
             @Override
-            public void call(MainPresenter.AdapterItem adapterItem) {
+            public void call(MainPresenter.PostAdapterItem adapterItem) {
                 //noinspection unchecked
                 final Bundle bundle = ActivityOptionsCompat.makeSceneTransitionAnimation(activity)
                         .toBundle();

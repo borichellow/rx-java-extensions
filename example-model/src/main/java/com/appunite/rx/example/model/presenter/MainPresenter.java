@@ -33,7 +33,7 @@ public class MainPresenter {
     @Nonnull
     private final Observable<ResponseOrError<ImmutableList<AdapterItem>>> itemsObservable;
     @Nonnull
-    private final Subject<AdapterItem, AdapterItem> openDetailsSubject = PublishSubject.create();
+    private final Subject<PostAdapterItem, PostAdapterItem> openDetailsSubject = PublishSubject.create();
     @Nonnull
     private final PostsDao postsDao;
 
@@ -57,9 +57,18 @@ public class MainPresenter {
                             @Nonnull
                             @Override
                             public AdapterItem apply(Post input) {
-                                return new AdapterItem(input.id(), input.name());
+                                return new PostAdapterItem(input.id(), input.name());
                             }
                         }).toList();
+                    }
+                }))
+                .compose(ResponseOrError.map(new Func1<ImmutableList<AdapterItem>, ImmutableList<AdapterItem>>() {
+                    @Override
+                    public ImmutableList<AdapterItem> call(ImmutableList<AdapterItem> adapterItems) {
+                        return ImmutableList.<AdapterItem>builder()
+                                .add(new HeaderAdapterItem())
+                                .addAll(adapterItems)
+                                .build();
                     }
                 }))
                 .compose(ObservableExtensions.<ResponseOrError<ImmutableList<AdapterItem>>>behaviorRefCount());
@@ -98,7 +107,7 @@ public class MainPresenter {
     }
 
     @Nonnull
-    public Observable<AdapterItem> openDetailsObservable() {
+    public Observable<PostAdapterItem> openDetailsObservable() {
         return openDetailsSubject;
     }
 
@@ -133,14 +142,18 @@ public class MainPresenter {
         return postsDao.loadMoreObserver();
     }
 
-    public class AdapterItem implements SimpleDetector.Detectable<AdapterItem> {
+    public abstract class AdapterItem implements SimpleDetector.Detectable<AdapterItem> {
+
+    }
+
+    public class PostAdapterItem extends AdapterItem {
 
         @Nonnull
         private final String id;
         @Nullable
         private final String text;
 
-        public AdapterItem(@Nonnull String id,
+        public PostAdapterItem(@Nonnull String id,
                            @Nullable String text) {
             this.id = id;
             this.text = text;
@@ -159,9 +172,9 @@ public class MainPresenter {
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
-            if (!(o instanceof AdapterItem)) return false;
+            if (!(o instanceof PostAdapterItem)) return false;
 
-            final AdapterItem that = (AdapterItem) o;
+            final PostAdapterItem that = (PostAdapterItem) o;
 
             return id.equals(that.id) && !(text != null ? !text.equals(that.text) : that.text != null);
         }
@@ -175,7 +188,7 @@ public class MainPresenter {
 
         @Override
         public boolean matches(@Nonnull AdapterItem item) {
-            return Objects.equal(id, item.id);
+            return item instanceof PostAdapterItem && Objects.equal(id, ((PostAdapterItem)item).id);
         }
 
         @Override
@@ -188,9 +201,23 @@ public class MainPresenter {
             return Observers.create(new Action1<Object>() {
                 @Override
                 public void call(Object o) {
-                    openDetailsSubject.onNext(AdapterItem.this);
+                    openDetailsSubject.onNext(PostAdapterItem.this);
                 }
             });
         }
+    }
+
+    public class HeaderAdapterItem extends AdapterItem {
+
+        @Override
+        public boolean matches(@Nonnull AdapterItem item) {
+            return item instanceof HeaderAdapterItem;
+        }
+
+        @Override
+        public boolean same(@Nonnull AdapterItem item) {
+            return item instanceof HeaderAdapterItem;
+        }
+
     }
 }

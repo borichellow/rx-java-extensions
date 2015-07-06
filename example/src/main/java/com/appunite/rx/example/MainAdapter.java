@@ -34,6 +34,8 @@ abstract class BaseViewHolder extends RecyclerView.ViewHolder {
 public class MainAdapter extends RecyclerView.Adapter<BaseViewHolder> implements
         Action1<ImmutableList<MainPresenter.AdapterItem>>, ChangesDetector.ChangesAdapter {
 
+    public static final int TYPE_POST = 0;
+    public static final int TYPE_HEADER = 1;
     @Nonnull
     private final ChangesDetector<MainPresenter.AdapterItem, MainPresenter.AdapterItem> changesDetector;
     @Nonnull
@@ -46,9 +48,17 @@ public class MainAdapter extends RecyclerView.Adapter<BaseViewHolder> implements
 
     @Override
     public BaseViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        final View view = LayoutInflater.from(parent.getContext())
-            .inflate(R.layout.main_adapter_item, parent, false);
-        return new MainViewHolder(view);
+        if (viewType == TYPE_POST) {
+            final View view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.main_adapter_item, parent, false);
+            return new MainViewHolder(view);
+        } else if (viewType == TYPE_HEADER) {
+            final View view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.main_adapter_header, parent, false);
+            return new HeaderViewHolder(view);
+        } else {
+            throw new RuntimeException("Unknown adapter item: " + viewType);
+        }
     }
 
     @Override
@@ -60,6 +70,18 @@ public class MainAdapter extends RecyclerView.Adapter<BaseViewHolder> implements
     public void onViewRecycled(BaseViewHolder holder) {
         super.onViewRecycled(holder);
         holder.recycle();
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        final MainPresenter.AdapterItem adapterItem = items.get(position);
+        if (adapterItem instanceof MainPresenter.PostAdapterItem) {
+            return TYPE_POST;
+        } else if (adapterItem instanceof MainPresenter.HeaderAdapterItem) {
+            return TYPE_HEADER;
+        } else {
+            throw new RuntimeException("Unknown adapter item: " + adapterItem);
+        }
     }
 
     @Override
@@ -86,17 +108,42 @@ public class MainAdapter extends RecyclerView.Adapter<BaseViewHolder> implements
 
         @Override
         public void bind(@Nonnull MainPresenter.AdapterItem item) {
-            text.setText(item.text());
+            final MainPresenter.PostAdapterItem postItem = (MainPresenter.PostAdapterItem) item;
+            text.setText(postItem.text());
+            unsubscribeIfSubscribed();
             subscription = new CompositeSubscription(
-                    ViewObservable.clicks(text).subscribe(item.clickObserver())
+                    ViewObservable.clicks(text).subscribe(postItem.clickObserver())
             );
+        }
+
+        private void unsubscribeIfSubscribed() {
+            if (subscription != null) {
+                subscription.unsubscribe();
+            }
         }
 
         @Override
         public void recycle() {
-            subscription.unsubscribe();
+            unsubscribeIfSubscribed();
         }
 
+    }
+
+    private class HeaderViewHolder extends BaseViewHolder {
+
+        public HeaderViewHolder(View itemView) {
+            super(itemView);
+        }
+
+        @Override
+        public void bind(@Nonnull MainPresenter.AdapterItem item) {
+
+        }
+
+        @Override
+        public void recycle() {
+
+        }
     }
 
 }
