@@ -1,13 +1,13 @@
 buildscript {
     repositories {
-        mavenCentral()
+        jcenter()
     }
 }
 
 apply plugin: 'java'
 
 repositories {
-    mavenCentral()
+    jcenter()
 }
 
 dependencies {
